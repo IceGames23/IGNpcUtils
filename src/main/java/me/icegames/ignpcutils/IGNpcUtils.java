@@ -3,50 +3,84 @@ package me.icegames.ignpcutils;
 import me.icegames.ignpcutils.database.Storage;
 import me.icegames.ignpcutils.listeners.PlayerJoinListener;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
+
+import java.io.File;
+
+import static java.lang.Character.toUpperCase;
 
 public class IGNpcUtils extends JavaPlugin {
 
     private static IGNpcUtils instance;
     private NPCManager npcManager;
     private Storage storage;
+    private FileConfiguration messagesConfig;
     private FileConfiguration config;
+
+    private final String pluginName = "NpcUtils";
+    private final String pluginDescription = "The NPC Utilities for Citizens2";
+    private final String consolePrefix = "\u001B[1;30m[\u001B[0m\u001B[36mI\u001B[1;36mG\u001B[0m\u001B[1;37m" + pluginName + "\u001B[1;30m]\u001B[0m ";
+
+    private void startingBanner() {
+        System.out.println("\u001B[36m  ___ \u001B[0m\u001B[1;36m____   \u001B[0m");
+        System.out.println("\u001B[36m |_ _\u001B[0m\u001B[1;36m/ ___|  \u001B[0m ");
+        System.out.println("\u001B[36m  | \u001B[0m\u001B[1;36m| |  _   \u001B[0m \u001B[36mI\u001B[0m\u001B[1;36mG\u001B[0m\u001B[1;37m" + pluginName + " \u001B[1;36mv" + getDescription().getVersion() + "\u001B[0m by \u001B[1;36mIceGames");
+        System.out.println("\u001B[36m  | \u001B[0m\u001B[1;36m| |_| |  \u001B[0m \u001B[1;30m" + pluginDescription);
+        System.out.println("\u001B[36m |___\u001B[0m\u001B[1;36m\\____| \u001B[0m");
+        System.out.println("\u001B[36m         \u001B[0m");
+    }
 
     @Override
     public void onEnable() {
         instance = this;
-        getLogger().info("Iniciando o plugin IGNpcUtils...");
-        getLogger().info("Versão: " + getDescription().getVersion());
-        getLogger().info("Autor: IceGames");
 
+        long startTime = System.currentTimeMillis();
+
+        startingBanner();
+
+        System.out.println(consolePrefix + "Starting IGNpcUtils...");
         saveDefaultConfig();
-        getLogger().info("Configuração carregada com sucesso.");
+        saveDefaultMessagesConfig();
+        System.out.println(consolePrefix + "Configuration successfully loaded.");
+        System.out.println(consolePrefix + "Loading database...");
 
         this.storage = new Storage(this);
         storage.init();
-        getLogger().info("Database inicializada com sucesso.");
+
+        String storageType = getConfig().getString("storage.type", "UNKNOWN").toUpperCase();
+        System.out.println(consolePrefix + "Database successfully initialized (" + storageType + ")");
 
         npcManager = new NPCManager(this, storage);
         npcManager.loadFromConfig();
 
-        getCommand("npcutils").setExecutor(new NPCUtilsCommand(npcManager, getConfig(), this));
+        getCommand("npcutils").setExecutor(new NPCUtilsCommand(npcManager, getMessagesConfig(), this));
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(npcManager), this);
 
-        getLogger().info("Plugin IGNpcUtils iniciado com sucesso!");
+        long endTime = System.currentTimeMillis();
+        System.out.println(consolePrefix + "\u001B[1;32mPlugin loaded successfully in " + (endTime - startTime) + "ms\u001B[0m");
     }
 
     @Override
     public void onDisable() {
-        getLogger().info("Encerrando o plugin IGNpcUtils...");
-        npcManager.saveToConfig(); // Salva os NPCs ocultos globalmente no config.yml
-        getLogger().info("Plugin IGNpcUtils encerrado com sucesso.");
+        npcManager.saveToConfig();
+        storage.close();
+        getLogger().info("Plugin disabled.");
     }
 
     public static IGNpcUtils getInstance() {
         return instance;
     }
 
-    public FileConfiguration getMessages() {
-        return getConfig();
+    private void saveDefaultMessagesConfig() {
+        File messagesFile = new File(getDataFolder(), "messages.yml");
+        if (!messagesFile.exists()) {
+            saveResource("messages.yml", false);
+        }
+        messagesConfig = YamlConfiguration.loadConfiguration(messagesFile);
+    }
+
+    public FileConfiguration getMessagesConfig() {
+        return messagesConfig;
     }
 }

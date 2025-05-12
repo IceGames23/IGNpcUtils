@@ -3,7 +3,6 @@ package me.icegames.ignpcutils;
 import net.citizensnpcs.api.CitizensAPI;
 import net.citizensnpcs.api.npc.NPC;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.Command;
@@ -13,20 +12,37 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerTeleportEvent;
 
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+
+import static org.bukkit.Bukkit.getLogger;
+
 public class NPCUtilsCommand implements CommandExecutor {
 
     private final NPCManager manager;
     private final FileConfiguration config;
     private final IGNpcUtils plugin;
 
-    public NPCUtilsCommand(NPCManager manager, FileConfiguration config, IGNpcUtils plugin) {
+    public NPCUtilsCommand(NPCManager manager, FileConfiguration messagesConfig, IGNpcUtils plugin) {
         this.manager = manager;
-        this.config = config;
+        this.config = messagesConfig;
         this.plugin = plugin;
     }
 
     private String getMessage(String path, String... placeholders) {
-        String message = config.getString("messages." + path, "&cMensagem não configurada.");
+        Object messageObj = config.get(path);
+        String message;
+
+        if (messageObj instanceof String) {
+            message = (String) messageObj;
+        } else if (messageObj instanceof List) {
+            @SuppressWarnings("unchecked")
+            List<String> messageList = (List<String>) messageObj;
+            message = String.join("\n", messageList);
+        } else {
+            message = "&cMessage '" + messageObj + "' not found in messages.yml.";
+        }
+
         for (int i = 0; i < placeholders.length; i += 2) {
             message = message.replace(placeholders[i], placeholders[i + 1]);
         }
@@ -41,38 +57,40 @@ public class NPCUtilsCommand implements CommandExecutor {
         }
 
         if (args.length < 1) {
-            sendHelpMessage(sender);
+            sender.sendMessage(getMessage("help"));
             return true;
         }
 
         String sub = args[0];
         int id;
-        try {
-            id = Integer.parseInt(args[1]);
-        } catch (NumberFormatException e) {
-            sender.sendMessage(getMessage("invalid_id"));
-            return true;
-        }
 
         switch (sub.toLowerCase()) {
             case "reload":
-                if (args.length != 1) {
-                    sender.sendMessage(getMessage("usage_reload"));
-                    return true;
-                }
                 try {
                     plugin.reloadConfig();
                     manager.loadFromConfig();
                     sender.sendMessage(getMessage("reload"));
+                    getLogger().info("Plugin successfully reloaded.");
                 } catch (Exception e) {
-                    sender.sendMessage(ChatColor.RED + "Erro ao recarregar a configuração.");
+                    sender.sendMessage(getMessage("error_reload"));
                     e.printStackTrace();
                 }
                 break;
 
             case "move":
-                if (args.length < 8) {
+                if (args.length != 8) {
                     sender.sendMessage(getMessage("usage_move"));
+                    return true;
+                }
+
+                try {
+                    id = Integer.parseInt(args[1]);
+                } catch (NumberFormatException e) {
+                    sender.sendMessage(getMessage("invalid_id"));
+                    return true;
+                }
+                if (id < 0) {
+                    sender.sendMessage(getMessage("invalid_id"));
                     return true;
                 }
 
@@ -108,7 +126,7 @@ public class NPCUtilsCommand implements CommandExecutor {
                 break;
 
             case "hideall":
-                if (args.length < 2) {
+                if (args.length != 2) {
                     sender.sendMessage(getMessage("usage_hideall"));
                     return true;
                 }
@@ -118,19 +136,24 @@ public class NPCUtilsCommand implements CommandExecutor {
                     sender.sendMessage(getMessage("invalid_id"));
                     return true;
                 }
-
-                if (manager.addDefaultHidden(id)) {
-                    int finalId1 = id;
-                    Bukkit.getOnlinePlayers().forEach(player -> manager.hideNPCFromPlayer(finalId1, player));
-                    manager.saveToConfig();
-                    sender.sendMessage(getMessage("npc_added", "%id%", String.valueOf(id)));
-                } else {
-                    sender.sendMessage(getMessage("npc_already_added"));
+                if (id < 0) {
+                    sender.sendMessage(getMessage("invalid_id"));
+                    return true;
                 }
+
+                CompletableFuture.runAsync(() -> {
+                    if (manager.addDefaultHidden(id)) {
+                        Bukkit.getOnlinePlayers().parallelStream().forEach(player -> manager.hideNPCFromPlayer(id, player));
+                        manager.saveToConfig();
+                        Bukkit.getScheduler().runTask(plugin, () -> sender.sendMessage(getMessage("npc_added", "%id%", String.valueOf(id))));
+                    } else {
+                        Bukkit.getScheduler().runTask(plugin, () -> sender.sendMessage(getMessage("npc_already_added")));
+                    }
+                });
                 break;
 
             case "showall":
-                if (args.length < 2) {
+                if (args.length != 2) {
                     sender.sendMessage(getMessage("usage_showall"));
                     return true;
                 }
@@ -140,21 +163,36 @@ public class NPCUtilsCommand implements CommandExecutor {
                     sender.sendMessage(getMessage("invalid_id"));
                     return true;
                 }
-
-                if (manager.removeDefaultHidden(id)) {
-                    int finalId = id;
-                    Bukkit.getOnlinePlayers().forEach(player -> manager.showNPCToPlayer(finalId, player));
-                    manager.saveToConfig();
-                    sender.sendMessage(getMessage("npc_removed", "%id%", String.valueOf(id)));
-                } else {
-                    sender.sendMessage(getMessage("npc_not_hidden"));
+                if (id < 0) {
+                    sender.sendMessage(getMessage("invalid_id"));
+                    return true;
                 }
+
+                CompletableFuture.runAsync(() -> {
+                    if (manager.removeDefaultHidden(id)) {
+                        Bukkit.getOnlinePlayers().parallelStream().forEach(player -> manager.showNPCToPlayer(id, player));
+                        manager.saveToConfig();
+                        Bukkit.getScheduler().runTask(plugin, () -> sender.sendMessage(getMessage("npc_removed", "%id%", String.valueOf(id))));
+                    } else {
+                        Bukkit.getScheduler().runTask(plugin, () -> sender.sendMessage(getMessage("npc_not_hidden")));
+                    }
+                });
                 break;
 
             case "show":
             case "hide":
-                if (args.length < 3) {
+                if (args.length != 3) {
                     sender.sendMessage(getMessage(sub.equals("show") ? "usage_show" : "usage_hide"));
+                    return true;
+                }
+                try {
+                    id = Integer.parseInt(args[1]);
+                } catch (NumberFormatException e) {
+                    sender.sendMessage(getMessage("invalid_id"));
+                    return true;
+                }
+                if (id < 0) {
+                    sender.sendMessage(getMessage("invalid_id"));
                     return true;
                 }
                 Player target = Bukkit.getPlayer(args[2]);
@@ -173,15 +211,8 @@ public class NPCUtilsCommand implements CommandExecutor {
                 break;
 
             default:
-                sender.sendMessage(getMessage("unknown_subcommand"));
-                sendHelpMessage(sender);
+                sender.sendMessage(getMessage("help"));
         }
         return true;
-    }
-
-    private void sendHelpMessage(CommandSender sender) {
-        for (String line : config.getStringList("messages.help")) {
-            sender.sendMessage(ChatColor.translateAlternateColorCodes('&', line));
-        }
     }
 }
