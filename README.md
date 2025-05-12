@@ -1,6 +1,6 @@
 # IGNpcUtils
 
-IGNpcUtils é um plugin para servidores Minecraft que fornece utilitários para gerenciar NPCs utilizando o plugin **Citizens2**. Ele permite ocultar, exibir e gerenciar NPCs de forma eficiente, além de salvar configurações no banco de dados.
+IGNpcUtils é um plugin para servidores Minecraft que fornece utilitários para gerenciar NPCs utilizando o plugin **Citizens2**. Ele permite ocultar, exibir e gerenciar NPCs (por jogador ou globalmente) de forma eficiente.
 
 ## 📋 Funcionalidades
 
@@ -14,7 +14,7 @@ IGNpcUtils é um plugin para servidores Minecraft que fornece utilitários para 
 - **Configurações Personalizáveis**:
   - Arquivos de configuração para mensagens e ajustes gerais.
 
-## 📜 Comandos
+## 📜 Comandos & Permissões
 
 | Comando                     | Descrição                                   | Permissão         |
 |-----------------------------|---------------------------------------------|-------------------|
@@ -23,10 +23,15 @@ IGNpcUtils é um plugin para servidores Minecraft que fornece utilitários para 
 | `/npcutils showall <id>`      | Exibe um NPC para todos os jogadores.       | `npcutils.admin`  |
 | `/npcutils hideall <id>`      | Oculta um NPC de todos os jogadores.        | `npcutils.admin`  |
 
+| Permissão                     | Descrição                                   |
+|-----------------------------|---------------------------------------------|
+| `npcutils.admin` | Acesso a todos os comandos admin do plugin.   |
+| `npcutils.bypass` | Habilidade de ver todos os NPCs globalmente ocultos.    |
+
 ## 🛠️ Dependências
 
 - **Minecraft**: Versão 1.8.8
-- [**Citizens2**](https://www.spigotmc.org/resources/citizens.13811/): Plugin obrigatório (v2.0.35 ou superior).
+- [**Citizens2**](https://www.spigotmc.org/resources/citizens.13811/) (v2.0.35 ou superior).
 
 ## 🚀 Instalação
 
