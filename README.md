@@ -7,39 +7,29 @@ IGNpcUtils é um plugin para servidores Minecraft que fornece utilitários para 
 - **Gerenciamento de NPCs**:
   - Ocultar e exibir NPCs para jogadores específicos.
   - Gerenciar NPCs ocultos e visíveis por padrão.
-- **Integração com Citizens2**:
-  - Dependência obrigatória para o funcionamento do plugin.
-- **Persistência de Dados**:
-  - Suporte a banco de dados configurável (MySQL, SQLite, etc.).
+- **MySQL & SQLite**:
+  - Suporte a banco de dados configurável (MySQL, SQLite, etc.) para armazenamento de dados dos jogadores.
 - **Configurações Personalizáveis**:
-  - Arquivos de configuração para mensagens e ajustes gerais.
+  - Arquivos de configuração para mensagens totalmente personalizáveis.
 
 ## 📜 Comandos & Permissões
-
-| Comando                     | Descrição                                   | Permissão         |
-|-----------------------------|---------------------------------------------|-------------------|
-| `/npcutils show <id> <player>` | Exibe um NPC para um jogador específico.   | `npcutils.admin`  |
-| `/npcutils hide <id> <player>` | Oculta um NPC de um jogador específico.    | `npcutils.admin`  |
-| `/npcutils showall <id>`      | Exibe um NPC para todos os jogadores.       | `npcutils.admin`  |
-| `/npcutils hideall <id>`      | Oculta um NPC de todos os jogadores.        | `npcutils.admin`  |
 
 | Permissão                     | Descrição                                   |
 |-----------------------------|---------------------------------------------|
 | `npcutils.admin` | Acesso a todos os comandos admin do plugin.   |
 | `npcutils.bypass` | Habilidade de ver todos os NPCs globalmente ocultos.    |
 
+| Comando                     | Descrição                                   |
+|-----------------------------|---------------------------------------------|
+| `/npcutils show <id> <player>` | Exibe um NPC para um jogador específico.   |
+| `/npcutils hide <id> <player>` | Oculta um NPC de um jogador específico.    |
+| `/npcutils showall <id>`      | Exibe um NPC para todos os jogadores.       |
+| `/npcutils hideall <id>`      | Oculta um NPC de todos os jogadores.        |
+
 ## 🛠️ Dependências
 
 - **Minecraft**: Versão 1.8.8
 - [**Citizens2**](https://www.spigotmc.org/resources/citizens.13811/) (v2.0.35 ou superior).
-
-## 🚀 Instalação
-
-1. Baixe o arquivo `.jar` do plugin.
-2. Coloque o arquivo na pasta `plugins` do seu servidor Minecraft.
-3. Certifique-se de que o plugin **Citizens2** está instalado (2.0.35 ou superior).
-4. Inicie o servidor para gerar os arquivos de configuração.
-5. Configure o arquivo `config.yml` e, se necessário, o `messages.yml`.
 
 ## 🧑‍💻 Desenvolvedor
 
