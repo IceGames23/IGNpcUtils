@@ -39,6 +39,7 @@ IGNpcUtils é um plugin para servidores Minecraft que fornece utilitários para 
 
 - **Autor**: IceGames
 - **GitHub**: [IceGames23](https://github.com/IceGames23)
+- **Discord:** icegames
 
 ## 📄 Licença
 
