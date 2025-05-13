@@ -2,7 +2,7 @@
 
 IGNpcUtils é um plugin que foi feito de uma necessidade para meu servidor [AfterLands](https://afterlands.com/) e que agora estou disponibilizando para a comunidade. 
 
-O plugin fornece utilitários para gerenciar NPCs (um addon) utilizando APIs do plugin [**Citizens2**](https://www.spigotmc.org/resources/citizens.13811/). Ele permite ocultar, exibir e gerenciar NPCs (por jogador ou globalmente) de forma eficiente, muito útil para inúmeros fins.
+O plugin fornece utilitários para gerenciar NPCs (um addon) utilizando APIs do plugin [**Citizens2**](https://www.spigotmc.org/resources/citizens.13811/). Ele permite ocultar, exibir, gerenciar NPCs (por jogador ou globalmente) e movê-los de forma eficiente, muito útil para sevidores de Survival, Skyblock, RPG e entre outros.
 
 ## 📋 Features
 
