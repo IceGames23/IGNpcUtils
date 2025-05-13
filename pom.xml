@@ -6,7 +6,7 @@
 
   <groupId>me.icegames</groupId>
   <artifactId>IGNpcUtils</artifactId>
-  <version>1.0.1</version>
+  <version>1.0.2</version>
   <packaging>jar</packaging>
 
   <name>IGNpcUtils</name>
@@ -28,6 +28,15 @@
         </configuration>
       </plugin>
       <plugin>
+        <groupId>org.graalvm.buildtools</groupId>
+        <artifactId>native-maven-plugin</artifactId>
+        <configuration>
+          <buildArgs>
+            <buildArg>-Dorg.sqlite.lib.exportPath=${project.build.directory}</buildArg>
+          </buildArgs>
+        </configuration>
+      </plugin>
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
         <version>3.2.4</version>
@@ -37,6 +46,18 @@
             <goals>
               <goal>shade</goal>
             </goals>
+            <configuration>
+              <filters>
+                <filter>
+                  <artifact>*:spigot-api</artifact>
+                  <artifact>*:citizens-main</artifact>
+                  <excludes>
+                    <exclude>**</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+              <minimizeJar>true</minimizeJar>
+            </configuration>
           </execution>
         </executions>
       </plugin>

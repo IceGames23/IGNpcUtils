@@ -53,8 +53,9 @@ public class Storage {
 
     private void setupSQLite() {
         HikariConfig config = new HikariConfig();
-        config.setJdbcUrl("jdbc:sqlite:" + plugin.getDataFolder() + "/npcutils.db");
-        config.setMaximumPoolSize(plugin.getConfig().getInt("storage.sqlite.pool_size", 10));
+        config.setJdbcUrl("jdbc:sqlite:plugins/IGNpcUtils/npcutils.db");
+        config.setDriverClassName("org.sqlite.JDBC");
+        config.setMaximumPoolSize(10);
         config.setMinimumIdle(2);
         config.setIdleTimeout(30000);
         config.setConnectionTimeout(30000);
