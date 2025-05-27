@@ -38,4 +38,7 @@ help:
   - " &b/npcutils showall &3<npcId>"
   - " &b/npcutils hide &3<npcId> <player>"
   - " &b/npcutils show &3<npcId> <player>"
+  - " &b/npcutils sit &3<npcId>"
+  - " &b/npcutils stand &3<npcId>"
+  - " &b/npcutils sleep &3<npcId>"
   - " "
