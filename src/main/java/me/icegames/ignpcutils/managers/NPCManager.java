@@ -1,5 +1,6 @@
-package me.icegames.ignpcutils;
+package me.icegames.ignpcutils.managers;
 
+import me.icegames.ignpcutils.IGNpcUtils;
 import me.icegames.ignpcutils.database.Storage;
 import net.citizensnpcs.api.CitizensAPI;
 import net.citizensnpcs.api.npc.NPC;

@@ -1,7 +1,9 @@
 package me.icegames.ignpcutils;
 
+import me.icegames.ignpcutils.commands.NPCUtilsCommand;
 import me.icegames.ignpcutils.database.Storage;
 import me.icegames.ignpcutils.listeners.PlayerJoinListener;
+import me.icegames.ignpcutils.managers.NPCManager;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -81,6 +83,10 @@ public class IGNpcUtils extends JavaPlugin {
     }
 
     public FileConfiguration getMessagesConfig() {
+        if (messagesConfig == null) {
+            File messagesFile = new File(getDataFolder(), "messages.yml");
+            messagesConfig = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(messagesFile);
+        }
         return messagesConfig;
     }
 }

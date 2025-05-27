@@ -1,6 +1,6 @@
 package me.icegames.ignpcutils.listeners;
 
-import me.icegames.ignpcutils.NPCManager;
+import me.icegames.ignpcutils.managers.NPCManager;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
