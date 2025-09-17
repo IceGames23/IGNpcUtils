@@ -5,6 +5,7 @@ import me.icegames.ignpcutils.managers.NPCManager;
 import me.icegames.ignpcutils.util.MessageUtil;
 import net.citizensnpcs.api.CitizensAPI;
 import net.citizensnpcs.api.npc.NPC;
+import net.citizensnpcs.util.NMS;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -59,6 +60,7 @@ public class NPCUtilsCommand implements CommandExecutor {
             case "reload":
                 try {
                     plugin.reloadConfig();
+                    plugin.reloadMessagesConfig(); // Adicionado para recarregar messages.yml
                     manager.loadFromConfig();
                     sender.sendMessage(MessageUtil.getMessage(plugin.getMessagesConfig(),"reload"));
                     getLogger().info("Plugin successfully reloaded.");
@@ -227,6 +229,40 @@ public class NPCUtilsCommand implements CommandExecutor {
                 sender.sendMessage(MessageUtil.getMessage(plugin.getMessagesConfig(), "npc_now_sitting", "%id%", String.valueOf(id)));
                 break;
 
+//            case "sneak":
+//                if (args.length < 2 || args.length > 3) {
+//                    sender.sendMessage(MessageUtil.getMessage(plugin.getMessagesConfig(), "usage_sneak"));
+//                    return true;
+//                }
+//                try {
+//                    id = Integer.parseInt(args[1]);
+//                } catch (NumberFormatException e) {
+//                    sender.sendMessage(MessageUtil.getMessage(plugin.getMessagesConfig(), "invalid_id"));
+//                    return true;
+//                }
+//                npc = CitizensAPI.getNPCRegistry().getById(id);
+//                if (npc == null) {
+//                    sender.sendMessage(MessageUtil.getMessage(plugin.getMessagesConfig(), "npc_not_found", "%id%", String.valueOf(id)));
+//                    return true;
+//                }
+//                if (!npc.getEntity().getType().equals(EntityType.PLAYER)) {
+//                    sender.sendMessage(MessageUtil.getMessage(plugin.getMessagesConfig(), "only_player_type"));
+//                    return true;
+//                }
+//                boolean shouldSneak = true;
+//                if (args.length == 3) {
+//                    shouldSneak = Boolean.parseBoolean(args[2]);
+//                }
+//                //npc.data().set("Sneak", shouldSneak);
+//                //npc.getOrAddTrait(net.citizensnpcs.trait.SneakTrait.class).setSneaking(shouldSneak);
+//                NMS.setSneaking(npc.getEntity(), shouldSneak);
+//                if (shouldSneak) {
+//                    sender.sendMessage(MessageUtil.getMessage(plugin.getMessagesConfig(), "npc_now_sneaking", "%id%", String.valueOf(id)));
+//                } else {
+//                    sender.sendMessage(MessageUtil.getMessage(plugin.getMessagesConfig(), "npc_now_standing", "%id%", String.valueOf(id)));
+//                }
+//                break;
+
             case "stand":
                 if (args.length != 2) {
                     sender.sendMessage(MessageUtil.getMessage(plugin.getMessagesConfig(), "usage_stand"));
@@ -239,6 +275,10 @@ public class NPCUtilsCommand implements CommandExecutor {
                     return true;
                 }
                 npc = CitizensAPI.getNPCRegistry().getById(id);
+                if (!npc.getEntity().getType().equals(EntityType.PLAYER)) {
+                    sender.sendMessage(MessageUtil.getMessage(plugin.getMessagesConfig(), "only_player_type"));
+                    return true;
+                }
                 if (npc == null) {
                     sender.sendMessage(MessageUtil.getMessage(plugin.getMessagesConfig(), "npc_not_found", "%id%", String.valueOf(id)));
                     return true;
@@ -256,6 +296,9 @@ public class NPCUtilsCommand implements CommandExecutor {
                         npc.removeTrait(net.citizensnpcs.trait.SitTrait.class);
                     }
                     npc.teleport(loc, PlayerTeleportEvent.TeleportCause.PLUGIN);
+//                } else if (npc.getOrAddTrait(net.citizensnpcs.trait.SneakTrait.class).isSneaking()) {
+//                    npc.data().set("Sneak", false);
+//                    npc.getOrAddTrait(net.citizensnpcs.trait.SneakTrait.class).setSneaking(false);
                 } else {
                     npc.data().set("Sleep", false);
                     npc.getOrAddTrait(net.citizensnpcs.trait.SleepTrait.class).setSleeping(null);

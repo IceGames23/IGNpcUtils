@@ -9,11 +9,13 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class NPCManager {
 
     private final Set<Integer> defaultHiddenNPCs = new HashSet<>();
-    private final Map<UUID, Set<Integer>> shownNPCsPerPlayer = new HashMap<>();
+    // O mapa em memória agora é preenchido pelo banco de dados no login.
+    private final Map<UUID, Set<Integer>> shownNPCsPerPlayer = new ConcurrentHashMap<>();
     private final IGNpcUtils plugin;
     private final Storage storage;
 
@@ -23,31 +25,34 @@ public class NPCManager {
         loadFromConfig();
     }
 
+    /**
+     * Carrega apenas a configuração de NPCs ocultos por padrão do config.yml.
+     * Os dados dos jogadores são carregados do banco de dados no momento do login.
+     */
     public void loadFromConfig() {
         FileConfiguration config = plugin.getConfig();
+        config.set("shown", null); // Remove a seção "shown" antiga para evitar confusão.
         defaultHiddenNPCs.clear();
         defaultHiddenNPCs.addAll(config.getIntegerList("defaultHidden"));
-
-        shownNPCsPerPlayer.clear();
-        if (config.isConfigurationSection("shown")) {
-            config.getConfigurationSection("shown").getKeys(false).forEach(uuidStr -> {
-                UUID uuid = UUID.fromString(uuidStr);
-                List<Integer> ids = config.getIntegerList("shown." + uuidStr);
-                shownNPCsPerPlayer.put(uuid, new HashSet<>(ids));
-            });
-        }
     }
 
+    /**
+     * Salva a lista de NPCs ocultos por padrão no config.yml.
+     */
     public void saveToConfig() {
         FileConfiguration config = plugin.getConfig();
         config.set("defaultHidden", new ArrayList<>(defaultHiddenNPCs));
-
         plugin.saveConfig();
     }
 
+    /**
+     * Lida com a entrada de um jogador, aplicando as regras de visibilidade de NPC.
+     * @param player O jogador que entrou no servidor.
+     */
     public void handleJoin(Player player) {
         UUID uuid = player.getUniqueId();
 
+        // Se o jogador tem a permissão de bypass, mostra todos os NPCs e encerra.
         if (player.hasPermission("npcutils.bypass")) {
             for (int id : defaultHiddenNPCs) {
                 NPC npc = CitizensAPI.getNPCRegistry().getById(id);
@@ -59,24 +64,32 @@ public class NPCManager {
             return;
         }
 
+        // Carrega os dados de NPCs visíveis para este jogador do banco de dados.
         Set<Integer> shown = storage.getShownNPCs(uuid);
-        Set<Integer> hidden = storage.getHiddenNPCs(uuid);
+        shownNPCsPerPlayer.put(uuid, shown); // Armazena em memória
 
+        // Itera sobre todos os NPCs que devem ser ocultos por padrão.
         for (int id : defaultHiddenNPCs) {
             NPC npc = CitizensAPI.getNPCRegistry().getById(id);
             if (npc != null && npc.isSpawned()) {
                 PlayerFilter filter = npc.getOrAddTrait(PlayerFilter.class);
                 filter.setDenylist();
 
-                if (!shown.contains(id) && hidden.contains(id)) {
-                    filter.addPlayer(uuid);
+                if (!shown.contains(id)) {
+                    filter.addPlayer(uuid); // Esconde o NPC.
                 } else {
-                    filter.removePlayer(uuid);
+                    filter.removePlayer(uuid); // Mostra o NPC.
                 }
             }
         }
+    }
 
-        shownNPCsPerPlayer.put(uuid, shown);
+    /**
+     * Lida com a saída de um jogador, limpando seus dados do cache em memória.
+     * @param player O jogador que saiu do servidor.
+     */
+    public void handleQuit(Player player) {
+        shownNPCsPerPlayer.remove(player.getUniqueId());
     }
 
     public boolean addDefaultHidden(int id) {
@@ -87,13 +100,22 @@ public class NPCManager {
         return defaultHiddenNPCs.remove(id);
     }
 
+    /**
+     * Mostra um NPC para um jogador e salva a alteração no banco de dados.
+     * @param id O ID do NPC.
+     * @param player O jogador.
+     */
     public void showNPCToPlayer(int id, Player player) {
         UUID uuid = player.getUniqueId();
-        shownNPCsPerPlayer.computeIfAbsent(uuid, k -> new HashSet<>()).add(id);
 
-        // Atualizar banco de dados
-        storage.saveShown(uuid, shownNPCsPerPlayer.get(uuid));
+        // Adiciona o ID à lista de NPCs visíveis para o jogador.
+        Set<Integer> shown = shownNPCsPerPlayer.computeIfAbsent(uuid, k -> new HashSet<>());
+        shown.add(id);
 
+        // Atualiza o banco de dados de forma assíncrona.
+        storage.saveShown(uuid, shown);
+
+        // Aplica a mudança de visibilidade no jogo.
         NPC npc = CitizensAPI.getNPCRegistry().getById(id);
         if (npc != null) {
             PlayerFilter filter = npc.getOrAddTrait(PlayerFilter.class);
@@ -101,13 +123,22 @@ public class NPCManager {
         }
     }
 
+    /**
+     * Oculta um NPC de um jogador e salva a alteração no banco de dados.
+     * @param id O ID do NPC.
+     * @param player O jogador.
+     */
     public void hideNPCFromPlayer(int id, Player player) {
         UUID uuid = player.getUniqueId();
-        shownNPCsPerPlayer.computeIfAbsent(uuid, k -> new HashSet<>()).remove(id);
 
-        // Atualizar banco de dados
-        storage.saveShown(uuid, shownNPCsPerPlayer.get(uuid));
+        // Remove o ID da lista de NPCs visíveis para o jogador.
+        Set<Integer> shown = shownNPCsPerPlayer.computeIfAbsent(uuid, k -> new HashSet<>());
+        shown.remove(id);
 
+        // Atualiza o banco de dados de forma assíncrona.
+        storage.saveShown(uuid, shown);
+
+        // Aplica a mudança de visibilidade no jogo.
         NPC npc = CitizensAPI.getNPCRegistry().getById(id);
         if (npc != null) {
             PlayerFilter filter = npc.getOrAddTrait(PlayerFilter.class);

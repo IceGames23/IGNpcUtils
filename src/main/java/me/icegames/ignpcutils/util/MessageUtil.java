@@ -17,7 +17,7 @@ public class MessageUtil {
             List<String> messageList = (List<String>) messageObj;
             message = String.join("\n", messageList);
         } else {
-            message = "&cMessage '" + path + "' not found in messages.yml.";
+            message = "§cMessage '" + path + "' not found in messages.yml.";
             return message;
         }
 

@@ -3,6 +3,7 @@ package me.icegames.ignpcutils;
 import me.icegames.ignpcutils.commands.NPCUtilsCommand;
 import me.icegames.ignpcutils.database.Storage;
 import me.icegames.ignpcutils.listeners.PlayerJoinListener;
+import me.icegames.ignpcutils.listeners.PlayerQuitListener;
 import me.icegames.ignpcutils.managers.NPCManager;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -58,6 +59,7 @@ public class IGNpcUtils extends JavaPlugin {
 
         getCommand("npcutils").setExecutor(new NPCUtilsCommand(npcManager, getMessagesConfig(), this));
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(npcManager), this);
+        getServer().getPluginManager().registerEvents(new PlayerQuitListener(npcManager), this);
 
         long endTime = System.currentTimeMillis();
         System.out.println(consolePrefix + "\u001B[1;32mPlugin loaded successfully in " + (endTime - startTime) + "ms\u001B[0m");
@@ -88,5 +90,15 @@ public class IGNpcUtils extends JavaPlugin {
             messagesConfig = org.bukkit.configuration.file.YamlConfiguration.loadConfiguration(messagesFile);
         }
         return messagesConfig;
+    }
+
+    public void reloadMessagesConfig() {
+        File messagesFile = new File(getDataFolder(), "messages.yml");
+        if (messagesFile.exists()) {
+            messagesConfig = YamlConfiguration.loadConfiguration(messagesFile);
+        } else {
+            saveDefaultMessagesConfig();
+            messagesConfig = YamlConfiguration.loadConfiguration(messagesFile);
+        }
     }
 }
