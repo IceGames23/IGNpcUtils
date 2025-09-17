@@ -145,4 +145,8 @@ public class NPCManager {
             filter.addPlayer(uuid);
         }
     }
+
+    public Storage getStorage() {
+        return storage;
+    }
 }

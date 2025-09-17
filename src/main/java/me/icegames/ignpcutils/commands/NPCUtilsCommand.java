@@ -200,7 +200,6 @@ public class NPCUtilsCommand implements CommandExecutor {
                     manager.hideNPCFromPlayer(id, target);
                     sender.sendMessage(MessageUtil.getMessage(plugin.getMessagesConfig(),"npc_hidden", "%id%", String.valueOf(id), "%player%", target.getName()));
                 }
-                manager.saveToConfig();
                 break;
 
             case "sit":
@@ -275,12 +274,12 @@ public class NPCUtilsCommand implements CommandExecutor {
                     return true;
                 }
                 npc = CitizensAPI.getNPCRegistry().getById(id);
-                if (!npc.getEntity().getType().equals(EntityType.PLAYER)) {
-                    sender.sendMessage(MessageUtil.getMessage(plugin.getMessagesConfig(), "only_player_type"));
-                    return true;
-                }
                 if (npc == null) {
                     sender.sendMessage(MessageUtil.getMessage(plugin.getMessagesConfig(), "npc_not_found", "%id%", String.valueOf(id)));
+                    return true;
+                }
+                if (!npc.getEntity().getType().equals(EntityType.PLAYER)) {
+                    sender.sendMessage(MessageUtil.getMessage(plugin.getMessagesConfig(), "only_player_type"));
                     return true;
                 }
                 if (!npc.getEntity().getType().equals(EntityType.PLAYER)) {

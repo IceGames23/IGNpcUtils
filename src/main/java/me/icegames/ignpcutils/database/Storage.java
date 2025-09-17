@@ -147,6 +147,11 @@ public class Storage {
         }
     }
 
+    public void clearCacheForPlayer(UUID uuid) {
+        cache.remove("npcutils_shown:" + uuid);
+        cache.remove("npcutils_hidden:" + uuid);
+    }
+
     public void close() {
         if (dataSource != null) {
             dataSource.close();
