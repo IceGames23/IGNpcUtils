@@ -13,6 +13,12 @@ public class Storage {
     private final IGNpcUtils plugin;
     private HikariDataSource dataSource;
     private final Map<String, Set<Integer>> cache = new ConcurrentHashMap<>();
+    // v2.0.1: Separate cache for player states (performance improvement)
+    private final Map<String, Map<Integer, String>> statesCache = new ConcurrentHashMap<>();
+
+    // v2.0.1: SQL injection prevention whitelist
+    private static final Set<String> VALID_TABLES = Set.of(
+            "npcutils_shown", "npcutils_hidden", "npcutils_states");
 
     public Storage(IGNpcUtils plugin) {
         this.plugin = plugin;
@@ -28,7 +34,10 @@ public class Storage {
             }
             createTables();
         } catch (Exception e) {
-            plugin.getLogger().log(Level.SEVERE, "Error initializing database", e);
+            // v2.0.1: Improved error handling - disable plugin on DB failure
+            plugin.getLogger().log(Level.SEVERE, "FATAL: Database initialization failed!", e);
+            plugin.getLogger().severe("Plugin cannot function without database. Disabling...");
+            plugin.getServer().getPluginManager().disablePlugin(plugin);
         }
     }
 
@@ -66,14 +75,45 @@ public class Storage {
     }
 
     private void createTables() {
-        String createShownTable = "CREATE TABLE IF NOT EXISTS npcutils_shown (uuid TEXT, npc_id INTEGER)";
-        String createHiddenTable = "CREATE TABLE IF NOT EXISTS npcutils_hidden (uuid TEXT, npc_id INTEGER)";
+        String createShownTable = "CREATE TABLE IF NOT EXISTS npcutils_shown (uuid TEXT, npc_id INTEGER, server_name TEXT)";
+        String createHiddenTable = "CREATE TABLE IF NOT EXISTS npcutils_hidden (uuid TEXT, npc_id INTEGER, server_name TEXT)";
+        String createStatesTable = "CREATE TABLE IF NOT EXISTS npcutils_states (uuid TEXT, npc_id INTEGER, state_name TEXT, server_name TEXT)";
         try (Connection conn = getConnection();
-             Statement stmt = conn.createStatement()) {
+                Statement stmt = conn.createStatement()) {
             stmt.executeUpdate(createShownTable);
             stmt.executeUpdate(createHiddenTable);
+            stmt.executeUpdate(createStatesTable);
+
+            // Migration: Add server_name column if it doesn't exist
+            addColumnIfNotExists(conn, "npcutils_shown", "server_name", "TEXT");
+            addColumnIfNotExists(conn, "npcutils_hidden", "server_name", "TEXT");
+            addColumnIfNotExists(conn, "npcutils_states", "server_name", "TEXT");
+
         } catch (SQLException e) {
             plugin.getLogger().log(Level.SEVERE, "Error creating tables in database", e);
+        }
+    }
+
+    private void addColumnIfNotExists(Connection conn, String table, String column, String type) {
+        try {
+            DatabaseMetaData meta = conn.getMetaData();
+            ResultSet rs = meta.getColumns(null, null, table, column);
+            if (!rs.next()) {
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.executeUpdate("ALTER TABLE " + table + " ADD COLUMN " + column + " " + type);
+                    plugin.getLogger().info("Added column " + column + " to table " + table);
+
+                    // Set default value for existing rows
+                    String serverName = plugin.getConfig().getString("server_name", "survival");
+                    try (PreparedStatement ps = conn.prepareStatement(
+                            "UPDATE " + table + " SET " + column + " = ? WHERE " + column + " IS NULL")) {
+                        ps.setString(1, serverName);
+                        ps.executeUpdate();
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.WARNING, "Error checking/adding column " + column + " to table " + table, e);
         }
     }
 
@@ -93,16 +133,24 @@ public class Storage {
     }
 
     public Set<Integer> getNPCs(String table, UUID uuid) {
+        // v2.0.1: SQL injection prevention
+        if (!VALID_TABLES.contains(table)) {
+            plugin.getLogger().warning("Attempted to access invalid table: " + table);
+            throw new IllegalArgumentException("Invalid table name: " + table);
+        }
+
         String cacheKey = table + ":" + uuid;
         if (cache.containsKey(cacheKey)) {
             return cache.get(cacheKey);
         }
 
         Set<Integer> result = new HashSet<>();
-        String query = "SELECT npc_id FROM " + table + " WHERE uuid = ?";
+        String serverName = plugin.getConfig().getString("server_name", "survival");
+        String query = "SELECT npc_id FROM " + table + " WHERE uuid = ? AND server_name = ?";
         try (Connection conn = getConnection();
-             PreparedStatement ps = conn.prepareStatement(query)) {
+                PreparedStatement ps = conn.prepareStatement(query)) {
             ps.setString(1, uuid.toString());
+            ps.setString(2, serverName);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     result.add(rs.getInt("npc_id"));
@@ -124,19 +172,22 @@ public class Storage {
         String cacheKey = table + ":" + uuid;
         cache.remove(cacheKey);
 
-        String deleteQuery = "DELETE FROM " + table + " WHERE uuid = ?";
-        String insertQuery = "INSERT INTO " + table + " (uuid, npc_id) VALUES (?, ?)";
+        String serverName = plugin.getConfig().getString("server_name", "survival");
+        String deleteQuery = "DELETE FROM " + table + " WHERE uuid = ? AND server_name = ?";
+        String insertQuery = "INSERT INTO " + table + " (uuid, npc_id, server_name) VALUES (?, ?, ?)";
         try (Connection conn = getConnection();
-             PreparedStatement deleteStmt = conn.prepareStatement(deleteQuery);
-             PreparedStatement insertStmt = conn.prepareStatement(insertQuery)) {
+                PreparedStatement deleteStmt = conn.prepareStatement(deleteQuery);
+                PreparedStatement insertStmt = conn.prepareStatement(insertQuery)) {
             conn.setAutoCommit(false);
 
             deleteStmt.setString(1, uuid.toString());
+            deleteStmt.setString(2, serverName);
             deleteStmt.executeUpdate();
 
             for (int id : ids) {
                 insertStmt.setString(1, uuid.toString());
                 insertStmt.setInt(2, id);
+                insertStmt.setString(3, serverName);
                 insertStmt.addBatch();
             }
             insertStmt.executeBatch();
@@ -150,6 +201,71 @@ public class Storage {
     public void clearCacheForPlayer(UUID uuid) {
         cache.remove("npcutils_shown:" + uuid);
         cache.remove("npcutils_hidden:" + uuid);
+        cache.remove("npcutils_states:" + uuid);
+        statesCache.remove("states:" + uuid); // v2.0.1: Clear states cache too
+    }
+
+    public void savePlayerState(UUID uuid, int npcId, String stateName) {
+        String serverName = plugin.getConfig().getString("server_name", "survival");
+        String deleteQuery = "DELETE FROM npcutils_states WHERE uuid = ? AND npc_id = ? AND server_name = ?";
+        String insertQuery = "INSERT INTO npcutils_states (uuid, npc_id, state_name, server_name) VALUES (?, ?, ?, ?)";
+
+        try (Connection conn = getConnection();
+                PreparedStatement deleteStmt = conn.prepareStatement(deleteQuery);
+                PreparedStatement insertStmt = conn.prepareStatement(insertQuery)) {
+            conn.setAutoCommit(false);
+
+            deleteStmt.setString(1, uuid.toString());
+            deleteStmt.setInt(2, npcId);
+            deleteStmt.setString(3, serverName);
+            deleteStmt.executeUpdate();
+
+            insertStmt.setString(1, uuid.toString());
+            insertStmt.setInt(2, npcId);
+            insertStmt.setString(3, stateName);
+            insertStmt.setString(4, serverName);
+            insertStmt.executeUpdate();
+
+            conn.commit();
+            // v2.0.1: Clear both caches
+            cache.remove("npcutils_states:" + uuid);
+            statesCache.remove("states:" + uuid);
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.WARNING, "Error saving player state", e);
+        }
+    }
+
+    public String getPlayerState(UUID uuid, int npcId) {
+        Map<Integer, String> states = getPlayerStates(uuid);
+        return states.get(npcId);
+    }
+
+    public Map<Integer, String> getPlayerStates(UUID uuid) {
+        // v2.0.1: Use dedicated states cache for performance
+        String cacheKey = "states:" + uuid;
+        if (statesCache.containsKey(cacheKey)) {
+            return new HashMap<>(statesCache.get(cacheKey));
+        }
+
+        Map<Integer, String> result = new HashMap<>();
+        String serverName = plugin.getConfig().getString("server_name", "survival");
+        String query = "SELECT npc_id, state_name FROM npcutils_states WHERE uuid = ? AND server_name = ?";
+
+        try (Connection conn = getConnection();
+                PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setString(1, uuid.toString());
+            ps.setString(2, serverName);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    result.put(rs.getInt("npc_id"), rs.getString("state_name"));
+                }
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.WARNING, "Error loading player states", e);
+        }
+
+        statesCache.put(cacheKey, result);
+        return result;
     }
 
     public void close() {

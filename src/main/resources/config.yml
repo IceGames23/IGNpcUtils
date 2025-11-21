@@ -1,8 +1,29 @@
 storage:
-  type: sqlite # or 'mysql'
+  type: sqlite # sqlite or 'mysql'
   mysql:
     host: localhost
     port: 3306
     database: npcutils
     username: root
     password: senha
+server_name: "survival" # For bungeecord support
+# NPC Aliases
+aliases:
+  blacksmith: 1
+  shopkeeper: 2
+# NPC Groups
+groups:
+  guards: [1, 2]
+  vendors: [2]
+# NPC Status Configuration
+npcs:
+  1:
+    states:
+      vip:
+        visible: true
+        actions:
+          - "console_command: say VIP %player_name% is viewing NPC 1!"
+      premium:
+        visible: true
+      default:
+        visible: false

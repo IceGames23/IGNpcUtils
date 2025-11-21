@@ -1,20 +1,21 @@
 package me.icegames.ignpcutils.listeners;
 
-import me.icegames.ignpcutils.managers.NPCManager;
+import me.icegames.ignpcutils.IGNpcUtils;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 
 public class PlayerJoinListener implements Listener {
 
-    private final NPCManager manager;
+    private final IGNpcUtils plugin;
 
-    public PlayerJoinListener(NPCManager manager) {
-        this.manager = manager;
+    public PlayerJoinListener(IGNpcUtils plugin) {
+        this.plugin = plugin;
     }
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
-        manager.handleJoin(event.getPlayer());
+        plugin.getNPCManager().handleJoin(event.getPlayer());
+        plugin.getStatusManager().loadPlayerStates(event.getPlayer().getUniqueId());
     }
 }

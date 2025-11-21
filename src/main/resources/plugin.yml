@@ -2,8 +2,8 @@ name: IGNpcUtils
 version: '${project.version}'
 main: me.icegames.ignpcutils.IGNpcUtils
 api-version: 1.8.8
-author: IceGames
-depend: [Citizens]
+authors: [ IceGames ]
+softdepend: [Citizens, PlaceholderAPI]
 commands:
   npcutils:
     description: Comandos do IGNpcUtils
