@@ -1,13 +1,16 @@
 package me.icegames.ignpcutils;
 
 import me.icegames.ignpcutils.commands.NPCUtilsCommand;
+import me.icegames.ignpcutils.database.IStorage;
 import me.icegames.ignpcutils.database.Storage;
+import me.icegames.ignpcutils.database.YamlStorage;
 import me.icegames.ignpcutils.listeners.PlayerJoinListener;
 import me.icegames.ignpcutils.listeners.PlayerQuitListener;
 import me.icegames.ignpcutils.managers.StatusManager;
 import me.icegames.ignpcutils.managers.NPCManager;
 import me.icegames.ignpcutils.util.NPCResolver;
 import me.icegames.ignpcutils.util.ConfigMigration;
+import me.icegames.ignpcutils.util.ConfigUpdateHelper;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -20,7 +23,7 @@ public class IGNpcUtils extends JavaPlugin {
     private NPCManager npcManager;
     private StatusManager statusManager;
     private NPCResolver npcResolver;
-    private Storage storage;
+    private IStorage storage;
     private FileConfiguration messagesConfig;
 
     private final String pluginName = "NpcUtils";
@@ -49,7 +52,6 @@ public class IGNpcUtils extends JavaPlugin {
         getLogger().info("Starting IGNpcUtils...");
         saveDefaultConfig();
         loadMessages();
-        getLogger().info("Configuration successfully loaded.");
 
         // Run config migration if needed
         ConfigMigration migration = new ConfigMigration(this);
@@ -59,12 +61,20 @@ public class IGNpcUtils extends JavaPlugin {
             getLogger().info("Configuration migrated successfully.");
         }
 
-        getLogger().info("Loading database...");
-        storage = new Storage(this);
-        storage.init();
+        // Update configs
+        ConfigUpdateHelper.updateConfig(this, "config.yml", java.util.Arrays.asList("npcs", "groups", "aliases"));
+        ConfigUpdateHelper.updateConfig(this, "messages.yml");
 
-        String storageType = getConfig().getString("storage.type", "UNKNOWN").toUpperCase();
-        getLogger().info("Database successfully initialized (" + storageType + ")");
+        getLogger().info("Configuration successfully loaded.");
+
+        getLogger().info("Loading storage...");
+        String storageType = getConfig().getString("storage.type", "yaml").toLowerCase();
+        if (storageType.equals("mysql") || storageType.equals("sqlite")) {
+            storage = new Storage(this);
+        } else {
+            storage = new YamlStorage(this);
+        }
+        storage.init();
 
         npcManager = new NPCManager(this, storage);
         npcManager.loadFromConfig();
@@ -81,7 +91,9 @@ public class IGNpcUtils extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        npcManager.saveToConfig();
+        if (npcManager != null) {
+            npcManager.saveToConfig();
+        }
         if (storage != null) {
             storage.close();
         }
@@ -104,7 +116,7 @@ public class IGNpcUtils extends JavaPlugin {
         return npcResolver;
     }
 
-    public Storage getStorage() {
+    public IStorage getStorage() {
         return storage;
     }
 

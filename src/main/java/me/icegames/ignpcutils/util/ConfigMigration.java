@@ -8,6 +8,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 public class ConfigMigration {
@@ -85,15 +87,18 @@ public class ConfigMigration {
      */
     private void backupConfig() {
         try {
+            Date date = new Date();
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH-mm");
+            String backupName = "config.yml." + dateFormat.format(date) + ".backup";
             File configFile = new File(plugin.getDataFolder(), "config.yml");
-            File backupFile = new File(plugin.getDataFolder(), "config.yml.backup");
+            File backupFile = new File(plugin.getDataFolder(), backupName);
 
             if (configFile.exists()) {
                 Files.copy(
                         configFile.toPath(),
                         backupFile.toPath(),
                         StandardCopyOption.REPLACE_EXISTING);
-                plugin.getLogger().info("Config backup created: config.yml.backup");
+                plugin.getLogger().info("Config backup created: " + backupName);
             }
         } catch (IOException e) {
             plugin.getLogger().warning("Failed to create config backup: " + e.getMessage());

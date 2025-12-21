@@ -1,5 +1,5 @@
 storage:
-  type: sqlite # sqlite or 'mysql'
+  type: yaml # yaml, sqlite, ou mysql
   mysql:
     host: localhost
     port: 3306

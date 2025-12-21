@@ -30,14 +30,15 @@ public class ShowCommand implements SubCommand {
             return;
         }
 
-        // Resolve NPC reference (ID or alias)
+        boolean silent = SubCommand.isSilent(args);
+
+        // Resolve NPC reference (ID or alias or group)
         List<Integer> npcIds = resolver.resolve(args[1]);
-        if (npcIds.isEmpty() || npcIds.size() > 1) {
+        if (npcIds.isEmpty()) {
             sender.sendMessage(
                     MessageUtil.getMessage(plugin.getMessagesConfig(), "invalid_npc_reference", "%ref%", args[1]));
             return;
         }
-        int id = npcIds.get(0);
 
         Player target = Bukkit.getPlayer(args[2]);
         if (target == null) {
@@ -45,9 +46,21 @@ public class ShowCommand implements SubCommand {
             return;
         }
 
-        manager.showNPCToPlayer(id, target);
-        sender.sendMessage(MessageUtil.getMessage(plugin.getMessagesConfig(), "npc_shown", "%id%", String.valueOf(id),
-                "%player%", target.getName()));
+        for (int id : npcIds) {
+            manager.showNPCToPlayer(id, target);
+        }
+
+        if (npcIds.size() == 1) {
+            SubCommand.sendMessage(sender, MessageUtil.getMessage(plugin.getMessagesConfig(), "npc_shown", "%id%",
+                    String.valueOf(npcIds.get(0)),
+                    "%player%", target.getName()), silent);
+        } else {
+            SubCommand.sendMessage(sender,
+                    MessageUtil.getMessage(plugin.getMessagesConfig(), "npc_shown_multi", "%count%",
+                            String.valueOf(npcIds.size()),
+                            "%player%", target.getName()),
+                    silent);
+        }
     }
 
     @Override

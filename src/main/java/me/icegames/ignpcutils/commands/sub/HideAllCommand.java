@@ -6,55 +6,69 @@ import me.icegames.ignpcutils.util.MessageUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class HideAllCommand implements SubCommand {
 
     private final IGNpcUtils plugin;
+    private final me.icegames.ignpcutils.util.NPCResolver resolver;
 
-    public HideAllCommand(IGNpcUtils plugin) {
+    public HideAllCommand(IGNpcUtils plugin, me.icegames.ignpcutils.util.NPCResolver resolver) {
         this.plugin = plugin;
+        this.resolver = resolver;
     }
 
     @Override
     public void execute(CommandSender sender, String[] args) {
-        if (args.length != 2) {
+        if (args.length < 2) {
             sender.sendMessage(MessageUtil.getMessage(plugin.getMessagesConfig(), "usage_hideall"));
             return;
         }
-        int id;
-        try {
-            id = Integer.parseInt(args[1]);
-        } catch (NumberFormatException e) {
-            sender.sendMessage(MessageUtil.getMessage(plugin.getMessagesConfig(), "invalid_id"));
-            return;
-        }
-        if (id < 0) {
-            sender.sendMessage(MessageUtil.getMessage(plugin.getMessagesConfig(), "invalid_id"));
+
+        boolean silent = SubCommand.isSilent(args);
+
+        List<Integer> npcIds = resolver.resolve(args[1]);
+        if (npcIds.isEmpty()) {
+            sender.sendMessage(
+                    MessageUtil.getMessage(plugin.getMessagesConfig(), "invalid_npc_reference", "%ref%", args[1]));
             return;
         }
 
         CompletableFuture.runAsync(() -> {
-            String npcPath = "npcs." + id;
-            if (!plugin.getConfig().contains(npcPath)) {
-                sender.sendMessage(MessageUtil.getMessage(plugin.getMessagesConfig(), "npc_not_found", "%id%",
-                        String.valueOf(id)));
-                return;
-            }
+            int count = 0;
+            for (int id : npcIds) {
+                String npcPath = "npcs." + id;
+                if (!plugin.getConfig().contains(npcPath)) {
+                    continue;
+                }
 
-            // For simplicity, we'll just modify the config to make default state hidden
-            plugin.getConfig().set(npcPath + ".states.default.visible", false);
+                // For simplicity, we'll just modify the config to make default state hidden
+                plugin.getConfig().set(npcPath + ".states.default.visible", false);
+                count++;
+            }
             plugin.saveConfig();
 
             // Reload states and apply default state to all online players
+            int finalCount = count;
             Bukkit.getScheduler().runTask(plugin, () -> {
                 plugin.getStatusManager().loadStates();
                 for (Player player : Bukkit.getOnlinePlayers()) {
-                    plugin.getStatusManager().applyState(player, id, "default");
+                    for (int id : npcIds) {
+                        plugin.getStatusManager().applyState(player, id, "default");
+                    }
                 }
-                sender.sendMessage(MessageUtil.getMessage(plugin.getMessagesConfig(), "npc_added", "%id%",
-                        String.valueOf(id)));
+                if (npcIds.size() == 1) {
+                    SubCommand.sendMessage(sender,
+                            MessageUtil.getMessage(plugin.getMessagesConfig(), "npc_added", "%id%",
+                                    String.valueOf(npcIds.get(0))),
+                            silent);
+                } else {
+                    SubCommand.sendMessage(sender,
+                            MessageUtil.getMessage(plugin.getMessagesConfig(), "npc_added_multi", "%count%",
+                                    String.valueOf(finalCount)),
+                            silent);
+                }
             });
         });
     }

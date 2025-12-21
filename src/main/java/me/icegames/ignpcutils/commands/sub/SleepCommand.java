@@ -18,10 +18,11 @@ public class SleepCommand implements SubCommand {
 
     @Override
     public void execute(CommandSender sender, String[] args) {
-        if (args.length != 2) {
+        if (args.length < 2) {
             sender.sendMessage(MessageUtil.getMessage(plugin.getMessagesConfig(), "usage_sleep"));
             return;
         }
+        boolean silent = SubCommand.isSilent(args);
         int id;
         try {
             id = Integer.parseInt(args[1]);
@@ -41,8 +42,9 @@ public class SleepCommand implements SubCommand {
         }
         CitizensAPI.getTraitFactory().getTraitClass("Sleep");
         npc.getOrAddTrait(net.citizensnpcs.trait.SleepTrait.class).setSleeping(npc.getEntity().getLocation());
-        sender.sendMessage(
-                MessageUtil.getMessage(plugin.getMessagesConfig(), "npc_now_sleeping", "%id%", String.valueOf(id)));
+        SubCommand.sendMessage(sender,
+                MessageUtil.getMessage(plugin.getMessagesConfig(), "npc_now_sleeping", "%id%", String.valueOf(id)),
+                silent);
     }
 
     @Override

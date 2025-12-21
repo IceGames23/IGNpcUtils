@@ -18,10 +18,11 @@ public class SitCommand implements SubCommand {
 
     @Override
     public void execute(CommandSender sender, String[] args) {
-        if (args.length != 2) {
+        if (args.length < 2) {
             sender.sendMessage(MessageUtil.getMessage(plugin.getMessagesConfig(), "usage_sit"));
             return;
         }
+        boolean silent = SubCommand.isSilent(args);
         int id;
         try {
             id = Integer.parseInt(args[1]);
@@ -42,8 +43,9 @@ public class SitCommand implements SubCommand {
         npc.data().set("Sit", true);
         CitizensAPI.getTraitFactory().getTraitClass("Sit");
         npc.getOrAddTrait(net.citizensnpcs.trait.SitTrait.class).setSitting(npc.getEntity().getLocation());
-        sender.sendMessage(
-                MessageUtil.getMessage(plugin.getMessagesConfig(), "npc_now_sitting", "%id%", String.valueOf(id)));
+        SubCommand.sendMessage(sender,
+                MessageUtil.getMessage(plugin.getMessagesConfig(), "npc_now_sitting", "%id%", String.valueOf(id)),
+                silent);
     }
 
     @Override

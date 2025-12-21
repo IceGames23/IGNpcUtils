@@ -1,7 +1,7 @@
 package me.icegames.ignpcutils.managers;
 
 import me.icegames.ignpcutils.IGNpcUtils;
-import me.icegames.ignpcutils.database.Storage;
+import me.icegames.ignpcutils.database.IStorage;
 import net.citizensnpcs.api.CitizensAPI;
 import net.citizensnpcs.api.npc.NPC;
 import net.citizensnpcs.api.trait.trait.PlayerFilter;
@@ -17,9 +17,9 @@ public class NPCManager {
     private final Map<UUID, Set<Integer>> hiddenNPCsPerPlayer = new ConcurrentHashMap<>();
 
     private final IGNpcUtils plugin;
-    private final Storage storage;
+    private final IStorage storage;
 
-    public NPCManager(IGNpcUtils plugin, Storage storage) {
+    public NPCManager(IGNpcUtils plugin, IStorage storage) {
         this.plugin = plugin;
         this.storage = storage;
     }
@@ -125,7 +125,7 @@ public class NPCManager {
         handleJoin(player);
     }
 
-    public Storage getStorage() {
+    public IStorage getStorage() {
         return storage;
     }
 

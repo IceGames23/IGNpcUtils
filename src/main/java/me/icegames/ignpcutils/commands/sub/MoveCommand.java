@@ -21,7 +21,42 @@ public class MoveCommand implements SubCommand {
 
     @Override
     public void execute(CommandSender sender, String[] args) {
-        if (args.length != 8) {
+        boolean silent = SubCommand.isSilent(args);
+
+        if ((args.length == 3 || args.length == 4) && args[2].equalsIgnoreCase("here")) {
+            if (!(sender instanceof org.bukkit.entity.Player)) {
+                sender.sendMessage(MessageUtil.getMessage(plugin.getMessagesConfig(), "player_only"));
+                return;
+            }
+
+            int id;
+            try {
+                id = Integer.parseInt(args[1]);
+            } catch (NumberFormatException e) {
+                sender.sendMessage(MessageUtil.getMessage(plugin.getMessagesConfig(), "invalid_id"));
+                return;
+            }
+
+            NPC npc = CitizensAPI.getNPCRegistry().getById(id);
+            if (npc == null) {
+                sender.sendMessage(MessageUtil.getMessage(plugin.getMessagesConfig(), "npc_not_found", "%id%",
+                        String.valueOf(id)));
+                return;
+            }
+
+            org.bukkit.entity.Player player = (org.bukkit.entity.Player) sender;
+            Location loc = player.getLocation();
+            npc.teleport(loc, PlayerTeleportEvent.TeleportCause.PLUGIN);
+            SubCommand.sendMessage(sender,
+                    MessageUtil.getMessage(plugin.getMessagesConfig(), "npc_moved", "%id%", String.valueOf(id),
+                            "%world%", loc.getWorld().getName(), "%x%", String.valueOf(loc.getX()), "%y%",
+                            String.valueOf(loc.getY()), "%z%", String.valueOf(loc.getZ()),
+                            "%pitch%", String.valueOf(loc.getPitch()), "%yaw%", String.valueOf(loc.getYaw())),
+                    silent);
+            return;
+        }
+
+        if (args.length < 8) {
             sender.sendMessage(MessageUtil.getMessage(plugin.getMessagesConfig(), "usage_move"));
             return;
         }
@@ -68,8 +103,12 @@ public class MoveCommand implements SubCommand {
         }
 
         npc.teleport(new Location(world, x, y, z, yaw, pitch), PlayerTeleportEvent.TeleportCause.PLUGIN);
-        sender.sendMessage(MessageUtil.getMessage(plugin.getMessagesConfig(), "npc_moved", "%id%", String.valueOf(id),
-                "%world%", worldName, "%x%", String.valueOf(x), "%y%", String.valueOf(y), "%z%", String.valueOf(z)));
+        SubCommand.sendMessage(sender,
+                MessageUtil.getMessage(plugin.getMessagesConfig(), "npc_moved", "%id%", String.valueOf(id),
+                        "%world%", worldName, "%x%", String.valueOf(x), "%y%", String.valueOf(y), "%z%",
+                        String.valueOf(z),
+                        "%pitch%", String.valueOf(pitch), "%yaw%", String.valueOf(yaw)),
+                silent);
     }
 
     @Override

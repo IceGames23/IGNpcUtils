@@ -1,7 +1,7 @@
 package me.icegames.ignpcutils.managers;
 
 import me.icegames.ignpcutils.IGNpcUtils;
-import me.icegames.ignpcutils.database.Storage;
+import me.icegames.ignpcutils.database.IStorage;
 import net.citizensnpcs.api.CitizensAPI;
 import net.citizensnpcs.api.npc.NPC;
 import net.citizensnpcs.api.trait.trait.PlayerFilter;
@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class StatusManager {
 
     private final IGNpcUtils plugin;
-    private final Storage storage;
+    private final IStorage storage;
 
     // NPC ID -> State Name -> State Config
     private final Map<Integer, Map<String, NPCState>> npcStates = new HashMap<>();
@@ -23,7 +23,7 @@ public class StatusManager {
     // Player UUID -> NPC ID -> Current State Name
     private final Map<UUID, Map<Integer, String>> playerStates = new ConcurrentHashMap<>();
 
-    public StatusManager(IGNpcUtils plugin, Storage storage) {
+    public StatusManager(IGNpcUtils plugin, IStorage storage) {
         this.plugin = plugin;
         this.storage = storage;
         loadStates();
@@ -135,6 +135,34 @@ public class StatusManager {
 
     public void clearPlayerStates(UUID playerUuid) {
         playerStates.remove(playerUuid);
+    }
+
+    /**
+     * Apply default states to a player for all configured NPCs that don't have a
+     * saved state.
+     * This ensures NPCs with visible: false in the default state are properly
+     * hidden for new players.
+     */
+    public void applyDefaultStates(Player player) {
+        UUID playerUuid = player.getUniqueId();
+        Map<Integer, String> currentStates = playerStates.getOrDefault(playerUuid, Collections.emptyMap());
+
+        // Iterate through all configured NPCs
+        for (Map.Entry<Integer, Map<String, NPCState>> entry : npcStates.entrySet()) {
+            int npcId = entry.getKey();
+            Map<String, NPCState> states = entry.getValue();
+
+            // Skip if player already has a state for this NPC
+            if (currentStates.containsKey(npcId)) {
+                continue;
+            }
+
+            // Apply default state if it exists
+            NPCState defaultState = states.get("default");
+            if (defaultState != null) {
+                applyState(player, npcId, "default");
+            }
+        }
     }
 
     private static class NPCState {

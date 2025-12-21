@@ -6,7 +6,7 @@
 
   <groupId>me.icegames</groupId>
   <artifactId>IGNpcUtils</artifactId>
-  <version>2.0.1</version>
+  <version>2.1.0</version>
   <packaging>jar</packaging>
 
   <name>IGNpcUtils</name>
@@ -47,12 +47,39 @@
               <goal>shade</goal>
             </goals>
             <configuration>
+              <relocations>
+                <relocation>
+                  <pattern>com.tchristofferson</pattern>
+                  <shadedPattern>me.icegames.ignpcutils.libs.configupdater</shadedPattern>
+                </relocation>
+              </relocations>
               <filters>
                 <filter>
                   <artifact>*:spigot-api</artifact>
                   <artifact>*:citizens-main</artifact>
                   <excludes>
                     <exclude>**</exclude>
+                  </excludes>
+                </filter>
+                <filter>
+                  <artifact>org.xerial:sqlite-jdbc</artifact>
+                  <excludes>
+                    <!-- Exclude native libraries for platforms we don't need -->
+                    <exclude>org/sqlite/native/Windows/x86/**</exclude>
+                    <exclude>org/sqlite/native/Windows/armv7/**</exclude>
+                    <exclude>org/sqlite/native/Windows/aarch64/**</exclude>
+                    <exclude>org/sqlite/native/Mac/**</exclude>
+                    <exclude>org/sqlite/native/FreeBSD/**</exclude>
+                    <exclude>org/sqlite/native/AIX/**</exclude>
+                    <exclude>org/sqlite/native/HPUX/**</exclude>
+                    <exclude>org/sqlite/native/Linux-Android/**</exclude>
+                    <exclude>org/sqlite/native/Linux-Musl/**</exclude>
+                    <exclude>org/sqlite/native/Linux-Arm/**</exclude>
+                    <exclude>org/sqlite/native/Linux-Armv6/**</exclude>
+                    <exclude>org/sqlite/native/Linux-Armv7/**</exclude>
+                    <exclude>org/sqlite/native/Linux-ppc64/**</exclude>
+                    <exclude>org/sqlite/native/Linux-x86/**</exclude>
+                    <!-- Keep Windows-x86_64 for local testing and Linux-x86_64 for production servers -->
                   </excludes>
                 </filter>
               </filters>
@@ -78,6 +105,10 @@
     <repository>
       <id>citizens-repo</id>
       <url>https://maven.citizensnpcs.co/repo</url>
+    </repository>
+    <repository>
+      <id>jitpack.io</id>
+      <url>https://jitpack.io</url>
     </repository>
   </repositories>
 
@@ -106,6 +137,17 @@
       <groupId>com.zaxxer</groupId>
       <artifactId>HikariCP</artifactId>
       <version>4.0.3</version>
+    </dependency>
+    <dependency>
+      <groupId>org.xerial</groupId>
+      <artifactId>sqlite-jdbc</artifactId>
+      <version>3.41.2.2</version>
+    </dependency>
+    <dependency>
+      <groupId>com.tchristofferson</groupId>
+      <artifactId>ConfigUpdater</artifactId>
+      <version>2.2</version>
+      <scope>compile</scope>
     </dependency>
   </dependencies>
 </project>

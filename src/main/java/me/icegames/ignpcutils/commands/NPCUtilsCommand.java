@@ -27,8 +27,8 @@ public class NPCUtilsCommand implements CommandExecutor {
     private void registerSubCommands() {
         subCommands.put("reload", new ReloadCommand(plugin, manager));
         subCommands.put("move", new MoveCommand(plugin));
-        subCommands.put("hideall", new HideAllCommand(plugin));
-        subCommands.put("showall", new ShowAllCommand(plugin));
+        subCommands.put("hideall", new HideAllCommand(plugin, plugin.getNPCResolver()));
+        subCommands.put("showall", new ShowAllCommand(plugin, plugin.getNPCResolver()));
         subCommands.put("show", new ShowCommand(plugin, manager, plugin.getNPCResolver()));
         subCommands.put("hide", new HideCommand(plugin, manager, plugin.getNPCResolver()));
         subCommands.put("sit", new SitCommand(plugin));

@@ -20,6 +20,7 @@ public class ReloadCommand implements SubCommand {
 
     @Override
     public void execute(CommandSender sender, String[] args) {
+        boolean silent = SubCommand.isSilent(args);
         try {
             plugin.reloadConfig();
             plugin.loadMessages();
@@ -28,7 +29,7 @@ public class ReloadCommand implements SubCommand {
             // restart
             // manager.getStorage().init(); // Optional: consider if we want to support
             // hot-swapping DBs
-            sender.sendMessage(MessageUtil.getMessage(plugin.getMessagesConfig(), "reload"));
+            SubCommand.sendMessage(sender, MessageUtil.getMessage(plugin.getMessagesConfig(), "reload"), silent);
             getLogger().info("Plugin successfully reloaded.");
         } catch (Exception e) {
             sender.sendMessage(MessageUtil.getMessage(plugin.getMessagesConfig(), "error_reload"));
