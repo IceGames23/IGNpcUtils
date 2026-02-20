@@ -8,6 +8,7 @@ import me.icegames.ignpcutils.listeners.PlayerJoinListener;
 import me.icegames.ignpcutils.listeners.PlayerQuitListener;
 import me.icegames.ignpcutils.managers.StatusManager;
 import me.icegames.ignpcutils.managers.NPCManager;
+import me.icegames.ignpcutils.managers.SkinManager;
 import me.icegames.ignpcutils.util.NPCResolver;
 import me.icegames.ignpcutils.util.ConfigMigration;
 import me.icegames.ignpcutils.util.ConfigUpdateHelper;
@@ -22,6 +23,7 @@ public class IGNpcUtils extends JavaPlugin {
     private static IGNpcUtils instance;
     private NPCManager npcManager;
     private StatusManager statusManager;
+    private SkinManager skinManager;
     private NPCResolver npcResolver;
     private IStorage storage;
     private FileConfiguration messagesConfig;
@@ -79,6 +81,7 @@ public class IGNpcUtils extends JavaPlugin {
         npcManager = new NPCManager(this, storage);
         npcManager.loadFromConfig();
         statusManager = new StatusManager(this, storage);
+        skinManager = new SkinManager(this);
         npcResolver = new NPCResolver(this);
 
         getCommand("npcutils").setExecutor(new NPCUtilsCommand(this));
@@ -110,6 +113,10 @@ public class IGNpcUtils extends JavaPlugin {
 
     public StatusManager getStatusManager() {
         return statusManager;
+    }
+
+    public SkinManager getSkinManager() {
+        return skinManager;
     }
 
     public NPCResolver getNPCResolver() {

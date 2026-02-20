@@ -35,7 +35,7 @@ public class NPCUtilsCommand implements CommandExecutor {
         subCommands.put("stand", new StandCommand(plugin));
         subCommands.put("sleep", new SleepCommand(plugin));
         subCommands.put("status", new StatusCommand(plugin, plugin.getStatusManager()));
-        subCommands.put("skin", new SkinCommand(plugin, plugin.getNPCResolver()));
+        subCommands.put("skin", new SkinCommand(plugin, plugin.getNPCResolver(), plugin.getSkinManager()));
         subCommands.put("alias", new AliasCommand(plugin, plugin.getNPCResolver()));
         subCommands.put("group", new GroupCommand(plugin, plugin.getNPCResolver()));
         subCommands.put("reset", new ResetCommand(plugin, manager));
